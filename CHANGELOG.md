@@ -1,6 +1,11 @@
 # Release Notes
 
-## [Unreleased](https://github.com/janakkapadia/insta-translate/compare/0.1.5...HEAD)
+## [Unreleased](https://github.com/janakkapadia/insta-translate/compare/0.1.6...HEAD)
+
+## [0.1.6](https://github.com/janakkapadia/insta-translate/compare/0.1.5...0.1.6) - 2026-07-20
+
+### Added
+- Added `.env` configuration support for retry delay via `INSTA_TRANSLATE_RETRY_DELAY_SECONDS` (defaults to 30 seconds).
 
 ## [0.1.5](https://github.com/janakkapadia/insta-translate/compare/0.1.4...0.1.5) - 2026-07-20
 

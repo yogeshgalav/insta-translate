@@ -48,4 +48,14 @@ return [
     |
     */
     'retry_attempts' => env('INSTA_TRANSLATE_RETRY_ATTEMPTS', 3),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Retry Delay
+    |--------------------------------------------------------------------------
+    |
+    | The number of seconds to wait before retrying a failed API request.
+    |
+    */
+    'retry_delay_seconds' => (int) env('INSTA_TRANSLATE_RETRY_DELAY_SECONDS', 30),
 ];

@@ -212,10 +212,11 @@ class TranslationGenerateCommand extends Command
         }
 
         $retryAttempts = (int) config('insta-translate.retry_attempts', 3);
+        $retryDelay = (int) config('insta-translate.retry_delay_seconds', 30) * 1000;
 
         $response = Http::retry(
             $retryAttempts,
-            1000,
+            $retryDelay,
             function (Throwable $exception, PendingRequest $request) {
                 if ($exception instanceof ConnectionException) {
                     return true;
@@ -262,10 +263,11 @@ class TranslationGenerateCommand extends Command
         }
 
         $retryAttempts = (int) config('insta-translate.retry_attempts', 3);
+        $retryDelay = (int) config('insta-translate.retry_delay_seconds', 30) * 1000;
 
         $response = Http::retry(
             $retryAttempts,
-            1000,
+            $retryDelay,
             function (Throwable $exception, PendingRequest $request) {
                 if ($exception instanceof ConnectionException) {
                     return true;

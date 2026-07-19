@@ -43,7 +43,11 @@ INSTA_TRANSLATE_CLAUDE_KEY=your_anthropic_api_key_here
 INSTA_TRANSLATE_GEMINI_KEY=your_google_gemini_api_key_here
 
 # Number of times to retry failed API requests (defaults to 3)
+# Automatically retries on Network Connection Errors, 429 Too Many Requests, and 5xx Server Errors.
 INSTA_TRANSLATE_RETRY_ATTEMPTS=3
+
+# Number of seconds to wait before retrying (defaults to 30)
+INSTA_TRANSLATE_RETRY_DELAY_SECONDS=30
 ```
 
 You can optionally publish the configuration file to customize the default model behavior:
