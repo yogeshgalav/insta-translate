@@ -65,6 +65,7 @@ php artisan translation:generate
 | `--model=` | Overrides the default model configured in `.env`. Accepts shorthand (`claude`, `gemini`) or exact model versions (e.g., `gemini-1.5-pro`, `gemma-2b`, `claude-3-opus-20240229`). | `php artisan translation:generate --model=gemini-1.5-pro` |
 | `--lang=` | Specifically targets a single language file, creating it if it doesn't exist. | `php artisan translation:generate --lang=nl` |
 | `--key=` | Translates a specific key. You can pass this multiple times to translate several specific keys. Overrides the missing key check. | `php artisan translation:generate --key="Welcome to our app" --key="auth.failed"` |
+| `--multiple` | Instructs the AI to generate 3 different translation variations for each key and interactively prompts you to select the best one. | `php artisan translation:generate --key="foo" --multiple` |
 | `--all` | Forces the translation of **all** keys present in `en.json`, overwriting existing translations in the target locale files. | `php artisan translation:generate --all` |
 
 ### How It Works
