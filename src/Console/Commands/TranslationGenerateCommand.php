@@ -15,14 +15,14 @@ class TranslationGenerateCommand extends Command
      */
     protected $signature = 'translation:generate 
                             {--batch=50 : Number of keys to translate per API request}
-                            {--model= : Which model to use (claude or gemini). Overrides env config.}
+                            {--model= : Which model to use (e.g. claude-3-opus-20240229, gemini-1.5-pro). Overrides env config.}
                             {--lang= : Specific language code to translate/create (e.g., fr, hi).}
                             {--all : Translate all keys, overwriting existing translations.}';
 
     /**
      * The command description.
      */
-    protected $description = 'Generate translations using Claude or Gemini AI.';
+    protected $description = 'Generate translations using Anthropic or Google AI models.';
 
     /**
      * Execute the console command.
@@ -113,17 +113,32 @@ class TranslationGenerateCommand extends Command
             "Return ONLY a valid JSON object without markdown formatting or other text.\n\n" .
             json_encode($chunk, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        if ($model === 'claude') {
-            return $this->callClaude($prompt);
-        } elseif ($model === 'gemini') {
-            return $this->callGemini($prompt);
+        $actualModel = $this->resolveModelName($model);
+
+        if (str_starts_with($actualModel, 'claude')) {
+            return $this->callClaude($prompt, $actualModel);
+        } elseif (str_starts_with($actualModel, 'gemini') || str_starts_with($actualModel, 'gemma')) {
+            return $this->callGemini($prompt, $actualModel);
         }
 
-        $this->error("Unknown model: {$model}");
+        $this->error("Unknown or unsupported model prefix: {$actualModel}");
         return null;
     }
 
-    private function callClaude(string $prompt): ?array
+    private function resolveModelName(string $model): string
+    {
+        if ($model === 'claude') {
+            return 'claude-3-5-sonnet-20241022';
+        }
+        
+        if ($model === 'gemini') {
+            return 'gemini-1.5-flash';
+        }
+        
+        return $model;
+    }
+
+    private function callClaude(string $prompt, string $model): ?array
     {
         $apiKey = config('ai-translator.claude_key');
         
@@ -137,7 +152,7 @@ class TranslationGenerateCommand extends Command
             'anthropic-version' => '2023-06-01',
             'content-type' => 'application/json',
         ])->post('https://api.anthropic.com/v1/messages', [
-            'model' => 'claude-3-5-sonnet-20241022',
+            'model' => $model,
             'max_tokens' => 4096,
             'messages' => [
                 ['role' => 'user', 'content' => $prompt]
@@ -154,7 +169,7 @@ class TranslationGenerateCommand extends Command
         return $this->parseJsonResponse($content);
     }
 
-    private function callGemini(string $prompt): ?array
+    private function callGemini(string $prompt, string $model): ?array
     {
         $apiKey = config('ai-translator.gemini_key');
         
@@ -165,7 +180,7 @@ class TranslationGenerateCommand extends Command
 
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
-        ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
+        ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
             'contents' => [
                 [
                     'parts' => [

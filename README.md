@@ -28,7 +28,8 @@ This package is installed locally via a path repository. It is already registere
 Add the following environment variables to your `.env` file to configure the AI Translator:
 
 ```env
-# Set the default model (claude or gemini)
+# Set the default model (e.g., claude-3-5-sonnet-20241022, gemini-1.5-pro)
+# "claude" and "gemini" are also accepted as shorthands for default models.
 AI_TRANSLATOR_MODEL=claude
 
 # Path to your language files (defaults to the laravel lang directory)
@@ -58,7 +59,7 @@ php artisan translation:generate
 | Option | Description | Example |
 |---|---|---|
 | `--batch=` | Sets the number of keys to translate per API request. Defaults to `50`. | `php artisan translation:generate --batch=100` |
-| `--model=` | Overrides the default model configured in `.env`. Accepts `claude` or `gemini`. | `php artisan translation:generate --model=gemini` |
+| `--model=` | Overrides the default model configured in `.env`. Accepts shorthand (`claude`, `gemini`) or exact model versions (e.g., `gemini-1.5-pro`, `gemma-2b`, `claude-3-opus-20240229`). | `php artisan translation:generate --model=gemini-1.5-pro` |
 | `--lang=` | Specifically targets a single language file, creating it if it doesn't exist. | `php artisan translation:generate --lang=nl` |
 | `--all` | Forces the translation of **all** keys present in `en.json`, overwriting existing translations in the target locale files. | `php artisan translation:generate --all` |
 
