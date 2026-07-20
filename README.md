@@ -29,25 +29,34 @@ This package is installed locally via a path repository. It is already registere
 
 ## Configuration
 
-Add the following environment variables to your `.env` file to configure InstaTranslate:
+AI provider, model, and API keys are managed by the Laravel AI SDK (`laravel/ai`). Publish and configure it in your host app:
+
+```bash
+php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
+```
+
+Then set your provider credentials in `.env` (examples):
 
 ```env
-# Set the default model (e.g., claude-3-5-sonnet-20241022, gemini-1.5-pro)
-# "claude" and "gemini" are also accepted as shorthands for default models.
-INSTA_TRANSLATE_MODEL=claude
+# Laravel AI — pick one (or more) providers in config/ai.php
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GEMINI_API_KEY=your_google_gemini_api_key_here
+```
 
+Configure the default provider (and optional per-provider default models) in `config/ai.php`. Insta Translate uses those defaults unless you pass `--provider` / `--model`.
+
+Package-specific settings:
+
+```env
 # Path to your language files (defaults to the laravel lang directory)
 INSTA_TRANSLATE_LANG_PATH=./lang
 
 # The base language to translate from (defaults to "en")
 INSTA_TRANSLATE_DEFAULT_LANGUAGE=en
-
-# Add your API Keys (managed automatically by Laravel AI SDK)
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-GEMINI_API_KEY=your_google_gemini_api_key_here
 ```
 
-You can optionally publish the configuration file to customize the default model behavior:
+You can optionally publish the package configuration file:
 
 ```bash
 php artisan vendor:publish --tag="insta-translate-config"
@@ -66,7 +75,8 @@ php artisan translation:generate
 | Option | Description | Example |
 |---|---|---|
 | `--batch=` | Number of keys per API request. Defaults to `50`. | `--batch=100` |
-| `--model=` | Override the default model. Accepts shorthand (`claude`, `gemini`) or exact versions. | `--model=gemini-1.5-pro` |
+| `--provider=` | Override the Laravel AI default provider. | `--provider=anthropic` |
+| `--model=` | Override the provider default model (exact model id). | `--model=claude-sonnet-4-20250514` |
 | `--lang=` | Target a single locale, creating it if it doesn't exist. | `--lang=nl` |
 | `--key=` | Translate specific key(s). Can be used multiple times. | `--key="Welcome" --key="Goodbye"` |
 | `--multiple` | Generate 3 translation variations per key and choose interactively. | `--key="foo" --multiple` |
