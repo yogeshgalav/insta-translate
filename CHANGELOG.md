@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/janakkapadia/insta-translate/compare/0.2.0...HEAD)
 
+### Changed
+
+- Removed package-owned LLM model management (`INSTA_TRANSLATE_MODEL` / `default_model` and model shorthand resolution). Translations now use the Laravel AI SDK default provider and model from `config/ai.php`, with optional `--provider` / `--model` passthrough overrides.
+
 ## [0.2.0](https://github.com/janakkapadia/insta-translate/compare/0.1.8...0.2.0) - 2026-07-20
 
 ### Added
