@@ -1,6 +1,14 @@
 # Release Notes
 
-## [Unreleased](https://github.com/janakkapadia/insta-translate/compare/0.1.8...HEAD)
+## [Unreleased](https://github.com/janakkapadia/insta-translate/compare/0.2.0...HEAD)
+
+## [0.2.0](https://github.com/janakkapadia/insta-translate/compare/0.1.8...0.2.0) - 2026-07-20
+
+### Added
+- **Glossary & Brand Terms Protection**: Create a `glossary.json` to define terms that should never be translated and locale-specific overrides.
+- **Context-Aware Translations**: New `--context` option to provide domain context (e.g., "SaaS billing dashboard") for more accurate translations.
+- **PHP Array File Support**: New `--php` flag to translate `lang/en/*.php` array files alongside JSON files.
+- **Stale Key Pruning**: New `translation:prune` command to remove orphaned keys from target locales, with `--dry-run` and `--php` support.
 
 ## [0.1.8](https://github.com/janakkapadia/insta-translate/compare/0.1.7...0.1.8) - 2026-07-20
 

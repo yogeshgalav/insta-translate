@@ -6,6 +6,7 @@ namespace InstaRequest\InstaTranslate;
 
 use Illuminate\Support\ServiceProvider;
 use InstaRequest\InstaTranslate\Console\Commands\TranslationGenerateCommand;
+use InstaRequest\InstaTranslate\Console\Commands\TranslationPruneCommand;
 
 class InstaTranslateServiceProvider extends ServiceProvider
 {
@@ -32,6 +33,7 @@ class InstaTranslateServiceProvider extends ServiceProvider
 
         $this->commands([
             TranslationGenerateCommand::class,
+            TranslationPruneCommand::class,
         ]);
     }
 }
