@@ -7,9 +7,10 @@ namespace InstaRequest\InstaTranslate\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use InstaRequest\InstaTranslate\Support\PhpArrayFileHandler;
-use Laravel\Ai\AnonymousAgent;
 use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
+
+use function Laravel\Ai\agent;
 
 class TranslationGenerateCommand extends Command
 {
@@ -18,7 +19,8 @@ class TranslationGenerateCommand extends Command
      */
     protected $signature = 'translation:generate 
                             {--batch=50 : Number of keys to translate per API request}
-                            {--model= : Which model to use (e.g. claude-3-opus-20240229, gemini-1.5-pro). Overrides env config.}
+                            {--provider= : Override the Laravel AI default provider (e.g. anthropic, openai, gemini).}
+                            {--model= : Override the provider default model (exact model id).}
                             {--lang= : Specific language code to translate/create (e.g., fr, hi).}
                             {--key=* : Specific keys to translate (can be used multiple times). Overrides the missing check.}
                             {--multiple : Generate multiple translation options to choose from.}
@@ -29,7 +31,7 @@ class TranslationGenerateCommand extends Command
     /**
      * The command description.
      */
-    protected $description = 'Generate translations using Anthropic or Google AI models.';
+    protected $description = 'Generate translations using the Laravel AI SDK.';
 
     /**
      * Glossary data loaded from glossary.json.
@@ -77,13 +79,14 @@ class TranslationGenerateCommand extends Command
         }
 
         $batchSize = max(1, (int) $this->option('batch'));
-        $model = is_string($this->option('model')) ? $this->option('model') : (string) config('insta-translate.default_model', 'claude');
+        $provider = $this->optionalStringOption('provider');
+        $model = $this->optionalStringOption('model');
         $translateAll = (bool) $this->option('all');
         $specificKeys = (array) $this->option('key');
         $multiple = (bool) $this->option('multiple');
-        $context = is_string($this->option('context')) ? $this->option('context') : null;
+        $context = $this->optionalStringOption('context');
 
-        $langOption = is_string($this->option('lang')) ? $this->option('lang') : null;
+        $langOption = $this->optionalStringOption('lang');
 
         if (! empty($specificKeys) && ! $langOption) {
             $langOption = $this->ask('For which language code do you want to translate these keys? (Leave empty for all available languages)');
@@ -124,7 +127,7 @@ class TranslationGenerateCommand extends Command
             foreach ($chunks as $index => $chunk) {
                 $this->line('Translating batch '.($index + 1).' of '.count($chunks).'...');
 
-                $translatedChunk = $this->translateChunk($chunk, $targetLocale, $model, $defaultLang, $multiple, $context);
+                $translatedChunk = $this->translateChunk($chunk, $targetLocale, $defaultLang, $multiple, $context, $provider, $model);
 
                 if ($translatedChunk) {
                     $translatedChunk = $this->applyGlossaryOverrides($translatedChunk, $targetLocale);
@@ -165,11 +168,12 @@ class TranslationGenerateCommand extends Command
 
         $handler = new PhpArrayFileHandler;
         $batchSize = max(1, (int) $this->option('batch'));
-        $model = is_string($this->option('model')) ? $this->option('model') : (string) config('insta-translate.default_model', 'claude');
+        $provider = $this->optionalStringOption('provider');
+        $model = $this->optionalStringOption('model');
         $translateAll = (bool) $this->option('all');
-        $context = is_string($this->option('context')) ? $this->option('context') : null;
+        $context = $this->optionalStringOption('context');
 
-        $langOption = is_string($this->option('lang')) ? $this->option('lang') : null;
+        $langOption = $this->optionalStringOption('lang');
 
         /** @var list<SplFileInfo> $baseFiles */
         $baseFiles = File::files($baseDir);
@@ -224,7 +228,7 @@ class TranslationGenerateCommand extends Command
                 foreach ($chunks as $index => $chunk) {
                     $this->line('  Translating batch '.($index + 1).' of '.count($chunks).'...');
 
-                    $translatedChunk = $this->translateChunk($chunk, $targetLocale, $model, $defaultLang, false, $context);
+                    $translatedChunk = $this->translateChunk($chunk, $targetLocale, $defaultLang, false, $context, $provider, $model);
 
                     if ($translatedChunk) {
                         $translatedChunk = $this->applyGlossaryOverrides($translatedChunk, $targetLocale);
@@ -289,8 +293,15 @@ class TranslationGenerateCommand extends Command
      * @param  array<string, string>  $chunk
      * @return array<string, mixed>|null
      */
-    private function translateChunk(array $chunk, string $targetLocale, string $model, string $defaultLang, bool $multiple = false, ?string $context = null): ?array
-    {
+    private function translateChunk(
+        array $chunk,
+        string $targetLocale,
+        string $defaultLang,
+        bool $multiple = false,
+        ?string $context = null,
+        ?string $provider = null,
+        ?string $model = null,
+    ): ?array {
         $glossaryInstructions = $this->buildGlossaryPrompt($targetLocale);
         $contextLine = $context !== null ? "Context: {$context}\n" : '';
 
@@ -311,47 +322,33 @@ class TranslationGenerateCommand extends Command
                 json_encode($chunk, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         }
 
-        $actualModel = $this->resolveModelName($model);
-
-        if (str_starts_with($actualModel, 'claude')) {
-            return $this->callAi($prompt, $actualModel, 'anthropic');
-        } elseif (str_starts_with($actualModel, 'gemini') || str_starts_with($actualModel, 'gemma')) {
-            return $this->callAi($prompt, $actualModel, 'gemini');
-        }
-
-        $this->error("Unknown or unsupported model prefix: {$actualModel}");
-
-        return null;
-    }
-
-    private function resolveModelName(string $model): string
-    {
-        if ($model === 'claude') {
-            return 'claude-3-5-sonnet-20241022';
-        }
-
-        if ($model === 'gemini') {
-            return 'gemini-1.5-flash';
-        }
-
-        return $model;
+        return $this->callAi($prompt, $provider, $model);
     }
 
     /**
      * @return array<string, mixed>|null
      */
-    private function callAi(string $prompt, string $model, string $provider): ?array
+    private function callAi(string $prompt, ?string $provider = null, ?string $model = null): ?array
     {
         try {
-            $agent = new AnonymousAgent('You are a helpful translation assistant.', [], []);
-            $response = $agent->prompt($prompt, [], $provider, $model);
+            $response = agent(
+                instructions: 'You are a helpful translation assistant.',
+            )->prompt($prompt, provider: $provider, model: $model);
 
             return $this->parseJsonResponse($response->text);
         } catch (Throwable $e) {
-            $this->error(ucfirst($provider).' API Error: '.$e->getMessage());
+            $label = $provider ?? 'AI';
+            $this->error(ucfirst($label).' API Error: '.$e->getMessage());
 
             return null;
         }
+    }
+
+    private function optionalStringOption(string $name): ?string
+    {
+        $value = $this->option($name);
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     /**
